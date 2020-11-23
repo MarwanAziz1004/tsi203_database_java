@@ -1,73 +1,59 @@
 package id.ac.unand.fti.si;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 public class App {
     
     static Scanner scanner;
     
-    static String DB_URL = "jdbc:mysql://localhost:3306/tb_java?serverTimezone=Asia/Jakarta";
-    static String USERNAME = "root";
-    static String PASSWORD = "password";
+    static KoleksiManager koleksiManager;
     
-    static Connection connection;
     
     public static void main(String[] args) throws Exception {
         
         // INISIALISASI
         scanner = new Scanner(System.in);
+        koleksiManager = new KoleksiManager();
         Integer option = 0;
         
-        try {
+        do {
+            System.out.println(">>> MENU PUSTAKA");
+            System.out.println(" 1. Lihat Koleksi");
+            System.out.println(" 2. Tambah Koleksi");
+            System.out.println(" 3. Hapus Koleksi");
+            System.out.println(" 4. Edit Koleksi");
+            System.out.println(" 5. Cari Koleksi");
+            System.out.println(" 0. Keluar");
+            System.out.print("\nPilihan Anda (1/2/3/4/5/0)? ");
+            option = Integer.parseInt(scanner.nextLine());
             
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            connection = DriverManager.getConnection(DB_URL, USERNAME, PASSWORD);
+            switch (option) {
+                case 1:
+                lihatKoleksi();
+                break;
+                case 2:
+                tambahKoleksi();
+                break;
+                case 3:
+                hapusKoleksi();
+                break;
+                case 4:
+                editKoleksi();
+                break;
+                case 5:
+                cariKoleksi();
+                break;
+                case 0:
+                break;
+                default:
+                System.out.println("Input tidak valid");
+            }
+            tunggu();
             
-            do {
-                System.out.println(">>> MENU PUSTAKA");
-                System.out.println(" 1. Lihat Koleksi");
-                System.out.println(" 2. Tambah Koleksi");
-                System.out.println(" 3. Hapus Koleksi");
-                System.out.println(" 4. Edit Koleksi");
-                System.out.println(" 5. Cari Koleksi");
-                System.out.println(" 0. Keluar");
-                System.out.print("\nPilihan Anda (1/2/3/4/5/0)? ");
-                option = Integer.parseInt(scanner.nextLine());
-                
-                switch (option) {
-                    case 1:
-                    lihatKoleksi();
-                    break;
-                    case 2:
-                    tambahKoleksi();
-                    break;
-                    case 3:
-                    hapusKoleksi();
-                    break;
-                    case 4:
-                    editKoleksi();
-                    break;
-                    case 5:
-                    cariKoleksi();
-                    break;
-                    case 0:
-                    break;
-                    default:
-                    System.out.println("Input tidak valid");
-                }
-                tunggu();
-                
-            } while (option != 0);
-            
-            connection.close();
-        } catch (ClassNotFoundException e) {
-            System.out.println("Terjadi Kesalahan : Driver tidak ditemukan");
-        }
+        } while (option != 0);
+        
     }
     
     private static void cariKoleksi() throws SQLException {
@@ -76,93 +62,62 @@ public class App {
         System.out.print("Masukkan kata kunci (judul) ");
         String keyword = scanner.nextLine();
         
-        Statement statement = connection.createStatement();
-        String sql = "SELECT * FROM koleksi WHERE judul LIKE '%"+keyword+"%'";
+        ArrayList<Koleksi> listKoleksi = koleksiManager.cari(keyword);
         
-        ResultSet result = statement.executeQuery(sql);
-        
-        while(result.next()){
-            System.out.print(result.getInt("id"));
-            System.out.print("\t: ");
-            System.out.print(result.getString("judul"));
-            System.out.print("\t: ");
-            System.out.print(result.getString("pengarang"));
-            System.out.print("\t: ");
-            System.out.println(result.getString("isbn"));
+        for(Koleksi koleksi : listKoleksi){
+            System.out.print(koleksi.getJudul());
+            System.out.print("\t");
+            System.out.print(koleksi.getPengarang());
+            System.out.print("\t");
+            System.out.println(koleksi.getPenerbit());
         }
-        
     }
     
     private static void editKoleksi() {
         System.out.println(" >> EDIT KOLEKSI");
         
-        try {
+        
             lihatKoleksi();
             System.out.print("ID Koleksi yang akan diedit ? ");
             Integer id = Integer.parseInt(scanner.nextLine());
             
-            String sql = "SELECT * FROM koleksi WHERE id = " + id;
+            Koleksi koleksi = koleksiManager.get(id);
             
-            Statement statement = connection.createStatement();
-            ResultSet rs = statement.executeQuery(sql);
+            System.out.print("Judul ["+koleksi.getJudul()+"]: ");
+            String judul = scanner.nextLine();
             
-            if(rs.next()){
-                
-                System.out.print("Judul ["+rs.getString("judul")+"]: ");
-                String judul = scanner.nextLine();
-                
-                System.out.print("Pengarang ["+rs.getString("pengarang")+"]: ");
-                String pengarang = scanner.nextLine();
-                
-                System.out.print("Penerbit ["+rs.getString("penerbit")+"]: ");
-                String penerbit = scanner.nextLine();
-                
-                System.out.print("ISBN ["+rs.getString("isbn")+"]: ");
-                String isbn = scanner.nextLine();
-                
-                System.out.print("Tahun Terbit ["+rs.getString("tahun_terbit")+"]: ");
-                Integer tahunTerbit = Integer.parseInt(scanner.nextLine());
-
-                sql = "UPDATE koleksi SET " +
-                    "judul = '" + judul + "', " +
-                    "pengarang = '" + pengarang + "', " +
-                    "penerbit = '" + penerbit + "', " +
-                    "isbn = '" + isbn + "', " +
-                    "tahun_terbit = " + tahunTerbit + " " +
-                    "WHERE id = " + id;
-
-                System.out.println(sql);
-
-                if(statement.executeUpdate(sql) > 0){
-                    System.out.println("Berhasil memperbaharui data koleksi");
-                }
+            System.out.print("Pengarang ["+koleksi.getPengarang()+"]: ");
+            String pengarang = scanner.nextLine();
+            
+            System.out.print("Penerbit ["+koleksi.getPenerbit()+"]: ");
+            String penerbit = scanner.nextLine();
+            
+            System.out.print("ISBN ["+koleksi.getIsbn()+"]: ");
+            String isbn = scanner.nextLine();
+            
+            System.out.print("Tahun Terbit ["+koleksi.getTahunTerbit()+"]: ");
+            Integer tahunTerbit = Integer.parseInt(scanner.nextLine());
+            
+            Koleksi koleksiUpdate = new Koleksi(judul, pengarang, penerbit, isbn, tahunTerbit);
+            
+            if(koleksiManager.update(id, koleksiUpdate) > 0){
+                System.out.println("Berhasil mengupdate data");
             }
-            statement.close();        
-        } catch (SQLException e) {
-            System.out.println("Terjadi kesalahan dalam mengedit data");
-            System.out.println(e.getMessage());
-        }
-    
+        
     }
     
     private static void hapusKoleksi(){
         System.out.println(" >> HAPUS KOLEKSI");
         
-        try{
-            lihatKoleksi();
-            
-            System.out.print("ID Koleksi yang akan dihapus ? ");
-            Integer id = Integer.parseInt(scanner.nextLine());
-            
-            String sql = "DELETE FROM koleksi WHERE id = "+ id;
-            Statement statement = connection.createStatement();
-            if(statement.executeUpdate(sql) > 0){
-                System.out.println("Berhasil menghapus data koleksi");
-            }
-            
-        }catch(SQLException e){
-            System.out.println("Terjadi kesalahan dalam menghapus data");
+        lihatKoleksi();
+        
+        System.out.print("ID Koleksi yang akan dihapus ? ");
+        Integer id = Integer.parseInt(scanner.nextLine());
+        
+        if(koleksiManager.hapus(id) > 0 ){
+            System.out.println("Behasil hapus koleksi");
         }
+        
         
         
     }
@@ -185,38 +140,26 @@ public class App {
         System.out.print("Tahun Terbit : ");
         Integer tahunTerbit = Integer.parseInt(scanner.nextLine());
         
-        String sql = "INSERT INTO koleksi (judul, pengarang, penerbit, isbn, tahun_terbit, tanggal_beli) VALUES('"+
-        judul+"', '"+
-        pengarang+"', '"+
-        penerbit+"', '"+
-        isbn+"', "+
-        tahunTerbit+", now() )";
+        Koleksi koleksi = new Koleksi(judul, pengarang, penerbit, isbn, tahunTerbit);
         
-        try {
-            Statement statement = connection.createStatement();
-            statement.execute(sql);
-            System.out.println("Berhasil input data");
-        } catch (SQLException e) {
-            System.out.println("Terjadi kesalahan input data");
+        if(koleksiManager.tambah(koleksi) > 0){
+            System.out.println("Berhasil menambah data koleksi");
         }
         
     }
     
-    private static void lihatKoleksi() throws SQLException {
+    private static void lihatKoleksi(){
         System.out.println(" >> LIHAT KOLEKSI");
-        Statement statement = connection.createStatement();
-        String sql = "SELECT * FROM koleksi";
+        ArrayList<Koleksi> listKoleksi = koleksiManager.getAll();
         
-        ResultSet result = statement.executeQuery(sql);
-        
-        while(result.next()){
-            System.out.print(result.getInt("id"));
-            System.out.print("\t: ");
-            System.out.print(result.getString("judul"));
-            System.out.print("\t: ");
-            System.out.print(result.getString("pengarang"));
-            System.out.print("\t: ");
-            System.out.println(result.getString("isbn"));
+        for(Koleksi koleksi : listKoleksi){
+            System.out.print(koleksi.getId());
+            System.out.print("\t| ");
+            System.out.print(koleksi.getJudul());
+            System.out.print("\t| ");
+            System.out.print(koleksi.getPengarang());
+            System.out.print("\t| ");
+            System.out.println(koleksi.getPenerbit());
         }
     }
     
